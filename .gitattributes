@@ -1,0 +1,31 @@
+# Enforce consistent LF endings across the repo
+* text=auto eol=lf
+
+# Shell and executable scripts
+*.sh text eol=lf
+
+# Configuration and data files
+*.yml  text eol=lf
+*.yaml text eol=lf
+*.sql  text eol=lf
+*.json text eol=lf
+*.md   text eol=lf
+*.js   text eol=lf
+*.ts   text eol=lf
+*.tsx  text eol=lf
+*.css  text eol=lf
+*.html text eol=lf
+
+# Preserve binary assets
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.woff binary
+*.woff2 binary
+
+# Prevent diff noise for lockfiles (optional; still text but stable)
+package-lock.json text eol=lf
+pnpm-lock.yaml text eol=lf
