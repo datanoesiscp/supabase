@@ -175,7 +175,3 @@ When work identifies tasks that should be addressed later:
 - Link commits to issues using keywords: `fixes`, `closes`, `resolves`
 - Reference issues in PR descriptions
 - Update issue status as work progresses
-
----
-
-*This file contains GitHub-specific instructions for the DocSpective project.*

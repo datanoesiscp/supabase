@@ -14,14 +14,14 @@ services:
     image: supabase/studio:2025.06.30-sha-6f5982d
     restart: unless-stopped
     ports:
-      - "3000:3000" # Expose Studio UI
+      - "${STUDIO_PORT}:${STUDIO_CONTAINER_PORT}" # Expose Studio UI
     healthcheck:
       test:
         [
           "CMD",
           "node",
           "-e",
-          "fetch('http://studio:3000/api/platform/profile').then((r) => {if (r.status !== 200) throw new Error(r.status)})"
+          "fetch('http://studio:${STUDIO_CONTAINER_PORT}/api/platform/profile').then((r) => {if (r.status !== 200) throw new Error(r.status)})"
         ]
       timeout: 10s
       interval: 5s
@@ -30,21 +30,21 @@ services:
       analytics:
         condition: service_healthy
     environment:
-      STUDIO_PG_META_URL: http://meta:8080
+      STUDIO_PG_META_URL: "http://meta:${PG_META_PORT}"
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
 
       DEFAULT_ORGANIZATION_NAME: ${STUDIO_DEFAULT_ORGANIZATION}
       DEFAULT_PROJECT_NAME: ${STUDIO_DEFAULT_PROJECT}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
 
-      SUPABASE_URL: http://kong:8000
+      SUPABASE_URL: "http://kong:${KONG_HTTP_INTERNAL_PORT}"
       SUPABASE_PUBLIC_URL: ${SUPABASE_PUBLIC_URL}
       SUPABASE_ANON_KEY: ${ANON_KEY}
       SUPABASE_SERVICE_KEY: ${SERVICE_ROLE_KEY}
       AUTH_JWT_SECRET: ${JWT_SECRET}
 
       LOGFLARE_PRIVATE_ACCESS_TOKEN: ${LOGFLARE_PRIVATE_ACCESS_TOKEN}
-      LOGFLARE_URL: http://analytics:4000
+      LOGFLARE_URL: "http://analytics:${ANALYTICS_INTERNAL_PORT}"
       NEXT_PUBLIC_ENABLE_LOGS: true
       # Comment to use Big Query backend for analytics
       NEXT_ANALYTICS_BACKEND_PROVIDER: postgres
@@ -56,8 +56,8 @@ services:
     image: kong:2.8.1
     restart: unless-stopped
     ports:
-      - ${KONG_HTTP_PORT}:8000/tcp
-      - ${KONG_HTTPS_PORT}:8443/tcp
+      - ${KONG_HTTP_PORT}:${KONG_HTTP_INTERNAL_PORT}/tcp
+      - ${KONG_HTTPS_PORT}:${KONG_HTTPS_INTERNAL_PORT}/tcp
     volumes:
       # https://github.com/supabase/supabase/issues/12661
       - ./volumes/api/kong.yml:/home/kong/temp.yml:ro,z
@@ -91,7 +91,7 @@ services:
           "--no-verbose",
           "--tries=1",
           "--spider",
-          "http://localhost:9999/health"
+          "http://localhost:${GOTRUE_API_PORT}/health"
         ]
       timeout: 5s
       interval: 5s
@@ -104,7 +104,7 @@ services:
         condition: service_healthy
     environment:
       GOTRUE_API_HOST: 0.0.0.0
-      GOTRUE_API_PORT: 9999
+      GOTRUE_API_PORT: ${GOTRUE_API_PORT}
       API_EXTERNAL_URL: ${API_EXTERNAL_URL}
 
       GOTRUE_DB_DRIVER: postgres
@@ -207,13 +207,13 @@ services:
           "/dev/null",
           "-H",
           "Authorization: Bearer ${ANON_KEY}",
-          "http://localhost:4000/api/tenants/realtime-dev/health"
+          "http://localhost:${REALTIME_PORT}/api/tenants/realtime-dev/health"
         ]
       timeout: 5s
       interval: 5s
       retries: 3
     environment:
-      PORT: 4000
+      PORT: ${REALTIME_PORT}
       DB_HOST: ${POSTGRES_HOST}
       DB_PORT: ${POSTGRES_PORT}
       DB_USER: supabase_admin
@@ -245,7 +245,7 @@ services:
           "--no-verbose",
           "--tries=1",
           "--spider",
-          "http://storage:5000/status"
+          "http://storage:${STORAGE_PORT}/status"
         ]
       timeout: 5s
       interval: 5s
@@ -261,7 +261,7 @@ services:
     environment:
       ANON_KEY: ${ANON_KEY}
       SERVICE_KEY: ${SERVICE_ROLE_KEY}
-      POSTGREST_URL: http://rest:3000
+      POSTGREST_URL: "http://rest:${POSTGREST_PORT}"
       PGRST_JWT_SECRET: ${JWT_SECRET}
       DATABASE_URL: postgres://supabase_storage_admin:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
       FILE_SIZE_LIMIT: 52428800
@@ -272,7 +272,7 @@ services:
       REGION: stub
       GLOBAL_S3_BUCKET: stub
       ENABLE_IMAGE_TRANSFORMATION: "true"
-      IMGPROXY_URL: http://imgproxy:5001
+      IMGPROXY_URL: "http://imgproxy:${IMGPROXY_PORT}"
 
   imgproxy:
     container_name: ${PROJECT_NAME}-supabase-imgproxy
@@ -291,7 +291,7 @@ services:
       interval: 5s
       retries: 3
     environment:
-      IMGPROXY_BIND: ":5001"
+      IMGPROXY_BIND: ":${IMGPROXY_PORT}"
       IMGPROXY_LOCAL_FILESYSTEM_ROOT: /
       IMGPROXY_USE_ETAG: "true"
       IMGPROXY_ENABLE_WEBP_DETECTION: ${IMGPROXY_ENABLE_WEBP_DETECTION}
@@ -307,7 +307,7 @@ services:
       analytics:
         condition: service_healthy
     environment:
-      PG_META_PORT: 8080
+      PG_META_PORT: ${PG_META_PORT}
       PG_META_DB_HOST: ${POSTGRES_HOST}
       PG_META_DB_PORT: ${POSTGRES_PORT}
       PG_META_DB_NAME: ${POSTGRES_DB}
@@ -325,7 +325,7 @@ services:
         condition: service_healthy
     environment:
       JWT_SECRET: ${JWT_SECRET}
-      SUPABASE_URL: http://kong:8000
+      SUPABASE_URL: "http://kong:${KONG_HTTP_INTERNAL_PORT}"
       SUPABASE_ANON_KEY: ${ANON_KEY}
       SUPABASE_SERVICE_ROLE_KEY: ${SERVICE_ROLE_KEY}
       SUPABASE_DB_URL: postgresql://postgres:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
@@ -343,7 +343,7 @@ services:
     image: supabase/logflare:1.14.2
     restart: unless-stopped
     ports:
-      - "${ANALYTICS_PORT:-4000}:4000"
+      - "${ANALYTICS_PORT:-4000}:${ANALYTICS_INTERNAL_PORT:-4000}"
     # Uncomment to use Big Query backend for analytics
     # volumes:
     #   - type: bind
@@ -355,7 +355,7 @@ services:
         [
           "CMD",
           "curl",
-          "http://localhost:4000/health"
+          "http://localhost:${ANALYTICS_INTERNAL_PORT}/health"
         ]
       timeout: 5s
       interval: 5s
@@ -463,7 +463,7 @@ services:
           "--no-verbose",
           "--tries=1",
           "--spider",
-          "http://vector:9001/health"
+          "http://vector:${VECTOR_HTTP_PORT}/health"
         ]
       timeout: 5s
       interval: 5s
@@ -484,8 +484,8 @@ services:
     image: supabase/supavisor:2.5.7
     restart: unless-stopped
     ports:
-      - ${POSTGRES_PORT}:5432
-      - ${POOLER_PROXY_PORT_TRANSACTION}:6543
+      - ${POSTGRES_PORT}:${POSTGRES_CONTAINER_PORT}
+      - ${POOLER_PROXY_PORT_TRANSACTION}:${POOLER_INTERNAL_PORT}
     volumes:
       - ./volumes/pooler/pooler.exs:/etc/pooler/pooler.exs:ro,z
     healthcheck:
@@ -497,7 +497,7 @@ services:
           "--head",
           "-o",
           "/dev/null",
-          "http://127.0.0.1:4000/api/health"
+          "http://127.0.0.1:${SUPAVISOR_HTTP_PORT}/api/health"
         ]
       interval: 10s
       timeout: 5s
@@ -508,7 +508,7 @@ services:
       analytics:
         condition: service_healthy
     environment:
-      PORT: 4000
+      PORT: ${SUPAVISOR_HTTP_PORT}
       POSTGRES_PORT: ${POSTGRES_PORT}
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}

@@ -49,7 +49,3 @@ fi
 echo ""
 echo "🎉 Reinitialization complete!"
 echo ""
-echo "Available services:"
-echo "  - Supabase Studio: http://localhost:3000"
-echo "  - Kong Gateway: http://localhost:8000"
-echo ""
